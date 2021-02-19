@@ -40,28 +40,47 @@ done
 cd $mainDir
 }
 
-
-#detector="ZZBOT"
-#detector="RD3SP3"
-#detector="RD3SP1"
-#detector="LittleChinese"
-detector="RD3SP5"
+detectorList="ZZBOT RD3SP1 RD3SP3 LittleChinese MGEM1 MGEM3"
 
 # Start here
+
+detectorOK=0
+if ! [ -z $1 ]
+then
+for entry in $detectorList
+do
+if [ $1 = $entry ]
+then
+detectorOK=1
+fi
+done
+fi
+
+if [ $detectorOK != 1 ]
+then
+echo "Please type ./Process.sh 'detector name' 'folder' where detector can be:"
+for entry in $detectorList
+do
+echo $entry
+done
+exit
+fi
+
+detector=$1
 
 echo
 echo "Detector: $detector"
 echo
 
-if [ -z $1 ]
+if [ -z $2 ]
 then
-echo "Please type ./Process.sh $folderName where folder can be:"
+echo "Please type ./Process.sh 'detector name' 'folder' where folder can be:"
 diplayGoodDir
 exit
 fi
 
 clean
-folder=$1
+folder=$2
 
 figureFolder="Figures/$detector/$folder"
 if [ ! -d $figureFolder ];

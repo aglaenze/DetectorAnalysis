@@ -2,7 +2,7 @@
 #include <dirent.h>
 #include <stdio.h>
 
-#include "_Utils.C"
+#include "Include/Utils.C"
 
 using namespace std;
 
@@ -11,7 +11,7 @@ Double_t FitFunctionLin( Double_t* x, Double_t* par )
 { return (par[0] + par[1] * x[0]); }
 
 //____________________________________________
-void CalibrationOrtec( string detectorName )
+void CalibrationOrtec( string detectorName = "MGEM1" )
 {
 	
 	gStyle->SetOptStat(0);
@@ -22,11 +22,38 @@ void CalibrationOrtec( string detectorName )
 	//const Double_t nPrimary = 222.68; // Ar-CO2
 	const Double_t nPrimary = 228.403; // Ar-iC4H10 (95/5)
 	
-	const Int_t n = 7;
-	const Double_t inputListmV[n] = {44, 8, 18, 59, 64, 92, 54};
+    /*
+	const Int_t n = 9;
+	//const Double_t inputListmV[n] = {47, 33, 26, 25, 17, 13, 11.5};
+    //const Double_t inputListmV[n] = {44.5, 35, 31.2, 25.4, 22.9, 18.3, 16.1, 12.9, 11.4};
+    
 	// For MM
-	const Double_t mcaList[n] = {721, 195, 497, 449, 514, 287, 155};
-	const Double_t coarseGainList[n] = {100, 100, 100, 50, 50, 20, 20};
+	//const Double_t mcaList[n] = {737, 512, 404, 359, 520, 410, 364};
+    const Double_t mcaList[n] = {800, 629, 555, 435, 387, 303, 267, 206, 184};
+	//const Double_t coarseGainList[n] = {100, 100, 100, 100, 200, 200, 200};
+    const Double_t coarseGainList[n] = {100, 100, 100, 100, 100, 100, 100, 100, 100};
+    */
+    
+    /*
+    const Int_t n = 9;
+    const Double_t inputListmV[n] = {147, 115, 101, 81.2, 73.7, 58.3, 50, 40, 35};
+    const Double_t mcaList[n] = {793, 632, 556, 442, 819, 654, 577, 460, 404};
+    const Double_t coarseGainList[n] = {100, 100, 100, 100, 200, 200, 200, 200, 200};
+     */
+    
+    /*
+    // 17/02/2021
+    const Int_t n = 4;
+    const Double_t inputListmV[n] = {33.3, 23.3, 16.5, 11.5};
+    const Double_t mcaList[n] = {912, 631, 464, 331};
+    const Double_t coarseGainList[n] = {200, 200, 200, 200};
+     */
+    
+    // 18/02/2021
+    const Int_t n = 4;
+    const Double_t inputListmV[n] = {33.3, 23.3, 16.5, 11.5};
+    const Double_t mcaList[n] = {495, 347, 509, 370};
+    const Double_t coarseGainList[n] = {100, 100, 200, 200};
 	
 	Double_t mcaListNorm[n] = {};
 	Double_t mcaListNorm2[n] = {};
@@ -52,16 +79,18 @@ void CalibrationOrtec( string detectorName )
 	//TGraph* gr = new TGraph(n, inputListmV, mcaListNorm);
 	gr->Draw("AP*");
 	gr->SetTitle( "Ortec calibration" );
-	//gr->GetXaxis()->SetTitle( "Number of electrons" );
-	gr->GetXaxis()->SetTitle( "mV" );
+	gr->GetXaxis()->SetTitle( "Number of electrons" );
+	//gr->GetXaxis()->SetTitle( "mV" );
 	gr->GetYaxis()->SetTitle( "MCA channels/ Coarse Gain" );
 	
-	Double_t xMin = 0.;
+	Double_t xMin = 100;
 	Double_t xMax = 0.;
 	for (Int_t i =0; i<n; i++){
 		if (xMax < eNumber[i]) xMax= eNumber[i];
+		if (xMin > eNumber[i]) xMin= eNumber[i];
 	}
-	xMax = xMax +1e7;
+	xMax *= 1.1;
+	xMin *= 0.9;
 	Int_t paramNum = 2;
 	
 	//xMin = inputListmV[1];
@@ -98,7 +127,7 @@ void CalibrationOrtec( string detectorName )
 	legend->AddEntry(f, Form( "y =  %.3g + %.3g x", f->GetParameter(0), f->GetParameter(1) ), "l");
 	legend->Draw();
 	
-	cv1->SaveAs(Form("Figures/%s/Calibration_Ortec.pdf", detectorName.c_str()));
+	cv1->SaveAs(Form("Figures/%s/Calibration_Ortec-new2.pdf", detectorName.c_str()));
 	
 	
 }

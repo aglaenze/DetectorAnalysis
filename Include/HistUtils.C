@@ -9,11 +9,12 @@
 #include "Riostream.h"
 
 #include <vector>
-#include <iostream>
 #include <fstream>
 #include <cmath>
 #include <dirent.h>
-#include <string.h>
+#include <iostream>     // std::cout
+#include <sstream>      // std::istringstream
+#include <string>       // std::string
 
 using namespace std;
 
@@ -134,18 +135,22 @@ Double_t FitFunctionExp( Double_t* x, Double_t* par )
 { return TMath::Exp( par[0] + par[1]*x[0] ); }
 
 //____________________________________________
-Double_t FitFunctionConst( Double_t* x, Double_t* par )
+Double_t FitFunctionConst( Double_t* par )
 { return ( par[0]); }
 
 
 Double_t FitGauss( Double_t* x, Double_t* par ) { //(Double_t x, Double_t mean = 0, Double_t sigma = 1, Bool_t norm = kFALSE)
 return  par[2]*TMath::Gaus( x[0], par[0], par[1]); }
 
+Double_t Fit3Gauss( Double_t* x, Double_t* par ) { //(Double_t x, Double_t mean = 0, Double_t sigma = 1, Bool_t norm = kFALSE)
+    return  par[2]*TMath::Gaus( x[0], par[0], par[1]) + par[5]*TMath::Gaus( x[0], par[3], par[4]) + par[8]*TMath::Gaus( x[0], par[6], par[7]) ;}
+
+Double_t Fit3GaussAndExp( Double_t* x, Double_t* par ) { //(Double_t x, Double_t mean = 0, Double_t sigma = 1, Bool_t norm = kFALSE)
+	return  par[2]*TMath::Gaus( x[0], par[0], par[1]) + par[5]*TMath::Gaus( x[0], par[3], par[4]) + par[8]*TMath::Gaus( x[0], par[6], par[7]) + TMath::Exp( par[9] + par[10]*x[0] ); }
 
 Double_t FitPoisson( Double_t* x, Double_t* par ) {
     return par[1]*par[2]*TMath::Poisson(x[0],par[0]);
 }
-
 
 //____________________________________________
 Double_t CrystalBall2( Double_t x, Double_t mean, Double_t sigma, Double_t alpha1, Double_t n1, Double_t alpha2, Double_t n2 )

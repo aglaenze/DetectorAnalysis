@@ -15,7 +15,7 @@
 #include <dirent.h>
 #include <string.h>
 
-
+using namespace std;
 
 //____________________________________________
 void PrintTime(time_t t0, time_t t1)
@@ -44,6 +44,24 @@ int GetNumberOfFiles(TString path) {
 	return GetNumberOfFiles(path, name);
 }
 
+bool FileExist(TString path, TString tag, vector<int> hvList, int& nCurrentsFound) {
+    struct dirent **namelist2;
+    Int_t n2 = scandir(path, &namelist2, 0, alphasort);
+    
+    TString name = tag;
+    for (int k = 0; k< (int)hvList.size(); k++) {name += Form("-%d", hvList[k]);}
+    if (n2 > 0) {
+        while (n2--) {
+            if (strstr(namelist2[n2]->d_name, name) != NULL) {
+                //logExist = true;
+                nCurrentsFound++;
+                return true;
+            }
+        }
+    }
+    return false;
+}
+
 //____________________________________________
 void PrintVector(
                  TString name,
@@ -64,8 +82,27 @@ void PrintVector(
 
 //____________________________________________
 void PrintVector(
+				 TString name,
+				 Int_t* values,
+				 Int_t size,
+				 TString format = "%f" )
+{
+	//std::cout << "const Double_t " << name << "["<<size<< "] = {";
+	std::cout << "const std::vector<Double_t> " << name << " = {";
+	for( Int_t i=0; i<size; ++i )
+	{
+		std::cout << Form( format.Data(), values[i] );
+		if( i != size-1 ) std::cout << ", ";
+		else std::cout << "};";
+	}
+	std::cout << std::endl;
+}
+
+template <typename T>
+//____________________________________________
+void PrintVector(
     TString name,
-    std::vector<Double_t> values,
+    std::vector<T> values,
     TString format = "%f" )
 { PrintVector( name, &values[0], values.size(), format ); }
 
@@ -86,4 +123,23 @@ void PrintList(
         else std::cout << "};";
     }
     std::cout << std::endl;
+}
+
+template <typename T>
+//____________________________________________
+void PrintList(
+			   TString name,
+			   vector<T> vec,
+			   TString format = "%f" )
+{
+	//std::cout << "const Double_t " << name << "["<<size<< "] = {";
+	Int_t num = (int) vec.size();
+	std::cout << "Double_t " << name << "[" << num << "]" << " = {";
+	for( Int_t i=0; i<num; ++i )
+	{
+		std::cout << Form( format.Data(), vec[i] );
+		if( i != num-1 ) std::cout << ", ";
+		else std::cout << "};";
+	}
+	std::cout << std::endl;
 }

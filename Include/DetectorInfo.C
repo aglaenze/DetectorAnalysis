@@ -53,7 +53,7 @@ int LoadElectrodeMap(string detectorName, map <string, int, NoSorting>& electrod
 		electrodeMap["drift"] = 4;
 		return 0;
 	}
-	else if (detectorName=="RD3SP5") {
+	else if (detectorName=="MGEM1" || detectorName=="MGEM3") {
 		electrodeMap["pad"] = 0;
 		electrodeMap["mesh"] = 1;
 		electrodeMap["GEM bottom"] = 2;
@@ -80,9 +80,13 @@ void LoadParameters(string detectorName, vector<double>& zElectrodes) {
 	else if (detectorName == "RD3SP4") {
 		zElectrodes = {0.87+0.0128+0.4, 0.0128+0.4, 0.4, 0};
 	}
-	else if (detectorName == "RD3SP5") {  // MM + GEM + MM
+	else if (detectorName == "MGEM1") {  // MM + GEM + MM
 		double damp = 0.0128+0.722+0.0060+0.0660;
 		zElectrodes = {damp+1.05, damp, 0.0128+0.722+0.00660, 0.0128+0.722, 0.0128, 0};
+	}
+	else if (detectorName == "MGEM3") {  // MM + GEM + MM
+		double damp = 0.0128+0.52;
+		zElectrodes = {damp+1.38, damp, 0.0128+0.52-0.0128, 0.0128+0.52-0.0128-0.00660, 0.0128, 0};
 	}
 	else if (detectorName == "LittleChinese") {   // MM + GEM
 		zElectrodes = {0.3+0.0320+0.0220, 0.0320+0.0220, 0.0220, 0};
@@ -148,7 +152,23 @@ void DrawDetector(string detectorName, vector<int> hvList) {
 		it++;
 		i++;
 	}
-	
+}
+
+double GetzElectrode(string detectorName, string electrodeName) {
+    vector<double> zElectrodes = {};
+    map <string, int, NoSorting> electrodeMap;
+    LoadParameters(detectorName, zElectrodes);
+    LoadElectrodeMap(detectorName, electrodeMap);
+    int i = 0;
+    map<string, int>::iterator it = electrodeMap.begin();
+    while (it != electrodeMap.end()) {
+        if (it->first == electrodeName) {
+            return zElectrodes[i];
+        }
+        it++;
+        i++;
+    }
+    return -1;
 }
 
 double GetCalibrationAlpha(string detectorName) {
@@ -164,8 +184,16 @@ double GetCalibrationAlpha(string detectorName) {
 	else if (detectorName == "RD3SP4") {
 		return 5.07508e-06;
 	}
-	else if (detectorName == "RD3SP5") {  // MM + GEM + MM
-		return 1.08932e-05;
+	else if (detectorName == "MGEM1") {  // MM + GEM + MM
+										 //return 1.08932e-05;
+		//return 1.22298e-05;
+        //return 1.51055e-05;
+        //return 4.23323e-06;
+        //return 1.06289e-05;     // data taken in TL, 17/02/2021
+        return 1.13753e-05;     // data taken in TL, 18/02/2021
+	}
+	else if (detectorName == "MGEM3") {  // MM + GEM + MM
+		return 1.25197e-05;
 	}
 	else if (detectorName == "LittleChinese") {   // MM + GEM
 		return 5.65359e-06;
