@@ -6,8 +6,8 @@ gain = 2000
 ampField = 26.5*conv	    # kV/cm
 ibf = 0.01                  # fraction of ions that drift back
 driftField = 400* 10**2     # V/cm
-rate=350000                 # source rate
-timeSampling=1            # time over which current is integrated, in s
+rate=320000                 # source rate
+timeSampling=5*10**(-6)            # time over which current is integrated, in s
 
 qe = 1.60217662 * 10**(-19)
 m = 39.948 * 1.66 * 10**(-27)   # mass or Ar ion in kg
@@ -18,7 +18,7 @@ def v(field, d):
 	return 2/3*sqrt(2*qe*field/m)*sqrt(d)
  
 def iExpected(field, d, N):
-    return rate*timeSampling* N * qe * 2/3 * v(field, d) * d
+    return rate*timeSampling* N * qe * 2/3 * v(field, d) / d
 
  
 iMesh=iExpected(ampField, damp, gain)

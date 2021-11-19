@@ -11,7 +11,7 @@ Double_t FitFunctionLin( Double_t* x, Double_t* par )
 { return (par[0] + par[1] * x[0]); }
 
 //____________________________________________
-void CalibrationOrtec( string detectorName = "MGEM1" )
+void CalibrationOrtec( string detectorName = "MGEM3" )
 {
 	
 	gStyle->SetOptStat(0);
@@ -20,7 +20,11 @@ void CalibrationOrtec( string detectorName = "MGEM1" )
 	const Double_t Gain = 2000;
 	//const Double_t nPrimary = 157;  //in Ne-CF4
 	//const Double_t nPrimary = 222.68; // Ar-CO2
-	const Double_t nPrimary = 228.403; // Ar-iC4H10 (95/5)
+	//const Double_t nPrimary = 228.403; // Ar-iC4H10 (95/5)
+    const Double_t nPrimary = 224; // Ar-iC4H10 (95/5) d'apres Garfield++
+    
+    bool fEl = true;   // if true, draws as a function of number of electrons
+                        // if false, draws as a function of mV
 	
     /*
 	const Int_t n = 9;
@@ -49,11 +53,67 @@ void CalibrationOrtec( string detectorName = "MGEM1" )
     const Double_t coarseGainList[n] = {200, 200, 200, 200};
      */
     
+    /*
     // 18/02/2021
     const Int_t n = 4;
     const Double_t inputListmV[n] = {33.3, 23.3, 16.5, 11.5};
     const Double_t mcaList[n] = {495, 347, 509, 370};
     const Double_t coarseGainList[n] = {100, 100, 200, 200};
+     */
+    
+    /*
+    // 18/02/2021
+    const Int_t n = 7;
+    const Double_t inputListmV[n] = {33.3, 26, 23.3, 16.5, 13.3, 11.5, 9.3};
+    const Double_t mcaList[n] = {684, 545, 485, 346, 277, 246, 197};
+    const Double_t coarseGainList[n] = {200, 200, 200, 200, 200, 200, 200};
+     */
+    
+    /*
+    // 25/02/2021 MGEM3
+    const Int_t n = 8;
+    const Double_t inputListmV[n] = {131, 93.3, 66.2, 46.4, 33.3, 23.2, 16.3, 11.8};
+    const Double_t mcaList[n] = {653, 466, 663, 476, 338, 514, 375, 280};
+    const Double_t coarseGainList[n] = {50, 50, 100, 100, 100, 200, 200, 200};
+     */
+    
+    /*
+    // 08/04/2021 MGEM1
+    const Int_t n = 4;
+    const Double_t inputListmV[n] = {65.4, 46.8, 32.7, 23.1};
+    const Double_t mcaList[n] = {650, 460, 326, 231};
+    const Double_t coarseGainList[n] = {100, 100, 100, 100};
+     */
+    
+    /*
+    // 15/04/2021 MGEM3 mesh down
+    const Int_t n = 4;
+    const Double_t inputListmV[n] = {65.4, 46.8, 32.7, 23.1};
+    const Double_t mcaList[n] = {722, 505, 354, 249};
+    const Double_t coarseGainList[n] = {100, 100, 100, 100};
+    */
+    
+    /*
+    // 15/04/2021 MGEM3 mesh top
+    const Int_t n = 4;
+    const Double_t inputListmV[n] = {65.4, 46.8, 32.7, 23.1};
+    const Double_t mcaList[n] = {675, 479, 341, 242};
+    const Double_t coarseGainList[n] = {100, 100, 100, 100};
+     */
+    
+    /*
+    // 6/10/2021 MGEM3 mesh down
+    const Int_t n = 4;
+    const Double_t inputListmV[n] = {75.0, 53.5, 38.0, 27.2};
+    const Double_t mcaList[n] = {734, 521, 373, 268};
+    const Double_t coarseGainList[n] = {200, 200, 200, 200};
+     */
+    
+    // 7/10/2021 MGEM1 mesh down
+    const Int_t n = 4;
+    const Double_t inputListmV[n] = {75.0, 53.5, 38.0, 27.2};
+    const Double_t mcaList[n] = {349, 249, 180, 129};
+    const Double_t coarseGainList[n] = {100, 100, 100, 100};
 	
 	Double_t mcaListNorm[n] = {};
 	Double_t mcaListNorm2[n] = {};
@@ -72,36 +132,48 @@ void CalibrationOrtec( string detectorName = "MGEM1" )
 	
 	gStyle->SetPadGridX( kTRUE );
 	gStyle->SetPadGridY( kTRUE );
+    
+    Double_t xMin = 100;
+    Double_t xMax = 0.;
 	
 	// MCA channel vs input mV
 	TCanvas* cv1 = new TCanvas( "cv1", "cv1", 900, 600 );
-	TGraph* gr = new TGraph(n, eNumber, mcaListNorm);
-	//TGraph* gr = new TGraph(n, inputListmV, mcaListNorm);
+    TGraph* gr = nullptr;
+    double xLine;
+    if (fEl) {
+        gr = new TGraph(n, eNumber, mcaListNorm);
+        gr->GetXaxis()->SetTitle( "Number of electrons" );
+        for (Int_t i =0; i<n; i++){
+            if (xMax < eNumber[i]) xMax= eNumber[i];
+            if (xMin > eNumber[i]) xMin= eNumber[i];
+        }
+        xLine = Gain*nPrimary;
+    }
+    else {
+        gr = new TGraph(n, inputListmV, mcaListNorm);
+        gr->GetXaxis()->SetTitle( "mV" );
+        for (Int_t i =0; i<n; i++){
+            if (xMax < inputListmV[i]) xMax= inputListmV[i];
+            if (xMin > inputListmV[i]) xMin= inputListmV[i];
+        }
+        xLine = Gain*nPrimary/(capa * conv) *qe;
+    }
+    xMax *= 1.1;
+    xMin *= 0.9;
 	gr->Draw("AP*");
 	gr->SetTitle( "Ortec calibration" );
-	gr->GetXaxis()->SetTitle( "Number of electrons" );
-	//gr->GetXaxis()->SetTitle( "mV" );
 	gr->GetYaxis()->SetTitle( "MCA channels/ Coarse Gain" );
-	
-	Double_t xMin = 100;
-	Double_t xMax = 0.;
-	for (Int_t i =0; i<n; i++){
-		if (xMax < eNumber[i]) xMax= eNumber[i];
-		if (xMin > eNumber[i]) xMin= eNumber[i];
-	}
-	xMax *= 1.1;
-	xMin *= 0.9;
+
 	Int_t paramNum = 2;
 	
-	//xMin = inputListmV[1];
-	//xMax = inputListmV[n-3];
-	
+
 	TF1* f = new TF1( "FitFunctionLin", FitFunctionLin, xMin, xMax, paramNum);
 	f->SetParName( 0, "const" );
 	f->SetParName( 1, "slope" );
 	
 	f->SetParameter(0,1e-6);
 	f->SetParameter(1,1e-6);
+    //f->FixParameter( 0, 0);
 	
 	gr->Fit( f , "0", "", xMin, xMax);
 	
@@ -110,13 +182,11 @@ void CalibrationOrtec( string detectorName = "MGEM1" )
 	
 	double yMax = gr->GetHistogram()->GetMaximum();
 	double yMin = gr->GetHistogram()->GetMinimum();
-	double xLine = Gain*nPrimary/(capa * conv) *qe;
-	//double xLine = Gain*nPrimary;
 	TLine *l = new TLine(xLine, yMin, xLine, yMax);
 	l->SetLineColor(kBlue);
 	l->Draw("same");
-	
-	std::cout<< "\n\nFor a coarse gain of 200, you have a peak at MCA : " << 200*f->Eval(xLine) << std::endl << std::endl << std::endl;
+
+	std::cout<< "\n\nFor a coarse gain of 100, you have a gain of 2000 at MCA : " << 100*f->Eval(xLine) << std::endl << std::endl << std::endl;
 	
 	// PutText( 0.2, 0.8, Form( "y =  %.3g + %.3g x", f->GetParameter(0), f->GetParameter(1) ) );
 	
@@ -127,7 +197,7 @@ void CalibrationOrtec( string detectorName = "MGEM1" )
 	legend->AddEntry(f, Form( "y =  %.3g + %.3g x", f->GetParameter(0), f->GetParameter(1) ), "l");
 	legend->Draw();
 	
-	cv1->SaveAs(Form("Figures/%s/Calibration_Ortec-new2.pdf", detectorName.c_str()));
+	cv1->SaveAs(Form("Figures/%s/Calibration_Ortec-mesh-down.pdf", detectorName.c_str()));
 	
 	
 }

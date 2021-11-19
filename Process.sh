@@ -27,7 +27,7 @@ diplayGoodDir() {
 mainDir=$PWD
 cd MCA/$detector
 mcaDir=$PWD
-for folder in `find ./  -type d`; do
+for folder in `find ./  -type d  | sort -f`; do
 folder="${folder:3}"
 cd $folder
 found=0
@@ -40,7 +40,7 @@ done
 cd $mainDir
 }
 
-detectorList="ZZBOT RD3SP1 RD3SP3 LittleChinese MGEM1 MGEM3"
+detectorList="LittleChinese MGEM1 MGEM3 RD3SP1 RD3SP3 ZZBOT"
 
 # Start here
 

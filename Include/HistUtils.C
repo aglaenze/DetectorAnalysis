@@ -22,10 +22,10 @@ using namespace std;
 Int_t GetMaximumBin( TH1*h, Int_t firstBin = 1, Int_t lastBin = 0 )
 {
     if( lastBin <= 0 ) lastBin = h->GetNbinsX();
-
+    
     Int_t iBinMax = firstBin;
     Double_t maxValue = h->GetBinContent( firstBin );
-
+    
     for( Int_t iBin = firstBin+1; iBin < lastBin; ++iBin )
     {
         const Double_t value = h->GetBinContent( iBin );
@@ -35,38 +35,48 @@ Int_t GetMaximumBin( TH1*h, Int_t firstBin = 1, Int_t lastBin = 0 )
             iBinMax = iBin;
         }
     }
-
+    
     return iBinMax;
+}
+
+Int_t GetMaximumPos( TH1*h, Double_t firstPos = 1, Double_t lastPos = 0 )
+{
+    if( lastPos <= 0 ) lastPos = h->GetXaxis()->GetBinCenter( h->GetNbinsX() );
+    
+    Int_t firstBin = h->GetXaxis()->FindBin(firstPos);
+    Int_t lastBin = h->GetXaxis()->FindBin(lastPos);
+    
+    return GetMaximumBin(h, firstBin, lastBin);
 }
 
 Int_t GetMinimumBin( TH1*h, Int_t firstBin = 1, Int_t lastBin = 0 )
 {
-	if( lastBin <= 0 ) lastBin = h->GetNbinsX();
-	
-	Int_t iBinMin = firstBin;
-	Double_t minValue = h->GetBinContent( firstBin );
-	
-	for( Int_t iBin = firstBin+1; iBin < lastBin; ++iBin )
-	{
-		const Double_t value = h->GetBinContent( iBin );
-		if( value < minValue )
-		{
-			minValue = value;
-			iBinMin = iBin;
-		}
-	}
-	
-	return iBinMin;
+    if( lastBin <= 0 ) lastBin = h->GetNbinsX();
+    
+    Int_t iBinMin = firstBin;
+    Double_t minValue = h->GetBinContent( firstBin );
+    
+    for( Int_t iBin = firstBin+1; iBin < lastBin; ++iBin )
+    {
+        const Double_t value = h->GetBinContent( iBin );
+        if( value < minValue )
+        {
+            minValue = value;
+            iBinMin = iBin;
+        }
+    }
+    
+    return iBinMin;
 }
 
 //____________________________________________
 Double_t GetMaximum( TH1*h, Int_t firstBin = 1, Int_t lastBin = 0 )
 {
     if( lastBin <= 0 ) lastBin = h->GetNbinsX();
-
+    
     Int_t iBinMax = firstBin;
     Double_t maxValue = h->GetBinContent( firstBin );
-
+    
     for( Int_t iBin = firstBin+1; iBin < lastBin; ++iBin )
     {
         const Double_t value = h->GetBinContent( iBin );
@@ -83,35 +93,44 @@ Double_t GetMaximum( TH1*h, Int_t firstBin = 1, Int_t lastBin = 0 )
 TH1* ReadData( const TString file)
 {
     // histogram
-    TH1* h = new TH1F( "mca", "", 1024, 0, 1024 );
+    TH1* h = new TH1F( "mca", "", 2048, 0, 2048. );
     //TH1* h = new TH1F( "mca", "mca", 1000, 0, 50 );
     //TH1* h = new TH1F( "mca", "mca", 100, 0, 5 );
-
+    
     std::string line;
     ifstream in( file.Data() );
-	if (in) {
-    Int_t iBin = 0;
-    while( getline( in, line ) )
-    {
-        istringstream stream( line );
-        Int_t value;
-        stream >> value;
-        if( stream )
+    if (in) {
+        Int_t iBin = 0;
+        while( getline( in, line ) )
         {
-            ++iBin;
-            //h->SetBinContent( iBin/coarseGain, value );
-            h->Fill( iBin, value );
+            istringstream stream( line );
+            Int_t value;
+            stream >> value;
+            if( stream )
+            {
+                ++iBin;
+                //h->SetBinContent( iBin/coarseGain, value );
+                h->Fill( iBin, value );
+            }
+            
         }
-
+        /*
+        h2->SetXTitle("MCA channels / Coarse Gain");
+        for (int i = 1; i < h->GetNbinsX()+1; i++) {
+            h2->SetBinContent(i, h->GetBinContent(i));
+        }
+         */
+        
+        //Double_t histMax = h->GetMaximum();
+        while (h->GetMaximum()<100) h->Rebin(2);
+        //h->Scale(1/histMax);
+        h->SetOption("hist");
+        h->SetXTitle("MCA channels");
+        h->SetYTitle("normalised # counts");
     }
-    Double_t histMax = h->GetMaximum();
-    h->Scale(1/histMax);
-    h->SetOption("hist");
-	h->SetXTitle("MCA channels");
-	h->SetYTitle("normalised # counts");
-	}
-	else {cout << "\n\nImpossible d'ouvrir le fichier MCA: " << file << endl << endl << endl;}
-
+    else {cout << "\n\nImpossible d'ouvrir le fichier MCA: " << file << endl << endl << endl;}
+    
+    //return h;
     return h;
 }
 
@@ -119,10 +138,11 @@ TH1* ReadData( const TString file)
 TH1* ReadData( const TString file, Int_t coarseGain)
 {
     // histogram
-	TH1* h = ReadData(file);
-    h->GetXaxis()->SetLimits(0, 1024./coarseGain );
+    TH1* h = ReadData(file);
+    //h->GetXaxis()->SetLimits(0, 1024./coarseGain );
+    h->GetXaxis()->SetLimits(0, 2048./coarseGain );
     h->SetXTitle("MCA channels / Coarse Gain");
-
+    //h->GetXaxis()->SetRangeUser(0,50);
     return h;
 }
 
@@ -135,18 +155,22 @@ Double_t FitFunctionExp( Double_t* x, Double_t* par )
 { return TMath::Exp( par[0] + par[1]*x[0] ); }
 
 //____________________________________________
+Double_t FitFunctionLin( Double_t* x, Double_t* par )
+{ return  par[0] + par[1]*x[0] ; }
+
+//____________________________________________
 Double_t FitFunctionConst( Double_t* par )
 { return ( par[0]); }
 
 
 Double_t FitGauss( Double_t* x, Double_t* par ) { //(Double_t x, Double_t mean = 0, Double_t sigma = 1, Bool_t norm = kFALSE)
-return  par[2]*TMath::Gaus( x[0], par[0], par[1]); }
+    return  par[2]*TMath::Gaus( x[0], par[0], par[1]); }
 
 Double_t Fit3Gauss( Double_t* x, Double_t* par ) { //(Double_t x, Double_t mean = 0, Double_t sigma = 1, Bool_t norm = kFALSE)
     return  par[2]*TMath::Gaus( x[0], par[0], par[1]) + par[5]*TMath::Gaus( x[0], par[3], par[4]) + par[8]*TMath::Gaus( x[0], par[6], par[7]) ;}
 
 Double_t Fit3GaussAndExp( Double_t* x, Double_t* par ) { //(Double_t x, Double_t mean = 0, Double_t sigma = 1, Bool_t norm = kFALSE)
-	return  par[2]*TMath::Gaus( x[0], par[0], par[1]) + par[5]*TMath::Gaus( x[0], par[3], par[4]) + par[8]*TMath::Gaus( x[0], par[6], par[7]) + TMath::Exp( par[9] + par[10]*x[0] ); }
+    return  par[2]*TMath::Gaus( x[0], par[0], par[1]) + par[5]*TMath::Gaus( x[0], par[3], par[4]) + par[8]*TMath::Gaus( x[0], par[6], par[7]) + TMath::Exp( par[9] + par[10]*x[0] ); }
 
 Double_t FitPoisson( Double_t* x, Double_t* par ) {
     return par[1]*par[2]*TMath::Poisson(x[0],par[0]);
@@ -155,21 +179,21 @@ Double_t FitPoisson( Double_t* x, Double_t* par ) {
 //____________________________________________
 Double_t CrystalBall2( Double_t x, Double_t mean, Double_t sigma, Double_t alpha1, Double_t n1, Double_t alpha2, Double_t n2 )
 {
-  Double_t t = (x-mean)/sigma;
-
-  if( t < -alpha1 )
-  {
-    Double_t a = TMath::Power( n1/alpha1, n1 )*TMath::Exp( -Square( alpha1 )/2 );
-    Double_t b = n1/alpha1 - alpha1;
-    return a/TMath::Power( b - t, n1 );
-
-  } else if( t > alpha2 ) {
-
-    Double_t a = TMath::Power( n2/alpha2, n2 )*TMath::Exp( -Square( alpha2 )/2 );
-    Double_t b = n2/alpha2 - alpha2;
-    return a/TMath::Power( b + t, n2 );
-
-  } else return TMath::Exp( -Square( t )/2 );
+    Double_t t = (x-mean)/sigma;
+    
+    if( t < -alpha1 )
+    {
+        Double_t a = TMath::Power( n1/alpha1, n1 )*TMath::Exp( -Square( alpha1 )/2 );
+        Double_t b = n1/alpha1 - alpha1;
+        return a/TMath::Power( b - t, n1 );
+        
+    } else if( t > alpha2 ) {
+        
+        Double_t a = TMath::Power( n2/alpha2, n2 )*TMath::Exp( -Square( alpha2 )/2 );
+        Double_t b = n2/alpha2 - alpha2;
+        return a/TMath::Power( b + t, n2 );
+        
+    } else return TMath::Exp( -Square( t )/2 );
 }
 
 Double_t FitFunctionCrystalBall2( Double_t* x, Double_t* par )

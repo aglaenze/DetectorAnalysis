@@ -17,7 +17,8 @@ using namespace std;
 
 TH1F* GetCurrentHist(TString fileName, string electrodeName, string detectorName) {
     
-    TH1F* hImon = new TH1F("hImon", Form("Currents on %s", electrodeName.c_str()), 4000, -100, 100);
+    //TH1F* hImon = new TH1F("hImon", Form("Currents on %s", electrodeName.c_str()), 4000, -100, 100);
+    TH1F* hImon = new TH1F("hImon", Form("Currents on %s", electrodeName.c_str()), 20000, -500, 500);
     
     map <string, int, NoSorting> electrodeMap;
     int ok = LoadElectrodeMap(detectorName, electrodeMap);
@@ -57,7 +58,8 @@ TH1F* GetCurrentHist(TString fileName, string electrodeName, string detectorName
             hImon->Fill(imon[elIdx]);
         }
         hImon->SetXTitle(Form("i_{%s} [nA]", electrodeName.c_str()));
-        while (hImon->GetMaximum()<40) hImon->Rebin(2);
+        //while (hImon->GetMaximum()<30) hImon->Rebin(2);
+        //while (hImon->GetMaximum()<10) hImon->Rebin(2);
         hImon->Scale(1./hImon->GetMaximum());
         hImon->SetMaximum(1.25);
     }
@@ -67,7 +69,8 @@ TH1F* GetCurrentHist(TString fileName, string electrodeName, string detectorName
 
 TH1F* GetCurrentHistCsv(TString fileName, string electrodeName, string detectorName) {
     
-    TH1F* hImon = new TH1F("hImon", Form("Currents on %s", electrodeName.c_str()), 4000, -100, 100);
+    //TH1F* hImon = new TH1F("hImon", Form("Currents on %s", electrodeName.c_str()), 4000, -100, 100);
+    TH1F* hImon = new TH1F("hImon", Form("Currents on %s", electrodeName.c_str()), 20000, -500, 500);
     
     /* Load electrode map */
     map <string, int, NoSorting> electrodeMap;
@@ -108,31 +111,73 @@ TH1F* GetCurrentHistCsv(TString fileName, string electrodeName, string detectorN
             if (time0 == 0) time0 = date.Convert();
             ftime = date.Convert() - time0;
             //if (imon[elIdx] < 1000 && imon[elIdx] > - 1000)
+            //hImon->Fill(imon[elIdx]+0.1);
             hImon->Fill(imon[elIdx]);
         }
         hImon->SetXTitle(Form("i_{%s} [nA]", electrodeName.c_str()));
-        while (hImon->GetMaximum()<40) hImon->Rebin(2);
+        //while (hImon->GetMaximum()<30*hImon->GetRMS()) hImon->Rebin(2);
+        //while (hImon->GetMaximum()<120) hImon->Rebin(2);
         hImon->Scale(1./hImon->GetMaximum());
-        hImon->SetMaximum(1.25);
+        hImon->SetMaximum(1.4);
     }
     else {cout << "\n\nImpossible d'ouvrir le fichier csv\n\n" << endl;}
     return hImon;
 }
 
 
-TF1* GetFitCurve(TH1F* h) {
+TF1* GetFitCurve(TH1F* h, string electrodeName) {
     //Set up fit
     Int_t iBinMax = h->GetMaximumBin();
+    //Int_t iBinMax = GetMaximumBin(h, 9000);
     Double_t xMax = h->GetXaxis()->GetBinCenter(iBinMax);
     
-    Double_t fitRangeMin = xMax - 3 * h->GetRMS() ;
-    Double_t fitRangeMax = xMax + 3 * h->GetRMS() ;
+    cout << "xMax = " << xMax << endl;
+    
+    
+    double prop = 0.0;
+    if (h->GetRMS() > 5) prop = 0.5;
+    else if (h->GetRMS() > 2) prop = 0.6;
+    else if (h->GetRMS() > 1) prop = 1;
+    else if (h->GetRMS() > 0.5) prop = 1.5;
+    else prop = 0.3;
+    if (abs(xMax) < 0.3 && h->GetRMS() < 1) prop = 0.3;
+    //prop = 0.7;
+    //if (h->GetRMS() < 1) prop = 2;
+    prop = 1;
+    //if (electrodeName == "drift") prop = 0.1;
+    Double_t fitRangeMin = xMax - prop*h->GetRMS() ;
+    Double_t fitRangeMax = xMax + prop*h->GetRMS() ;
+    if (electrodeName == "drift") {
+        fitRangeMin = xMax - 0.3 ;
+        fitRangeMax = xMax + 0.3 ;
+    }
+    
     /*
-     if (h->GetRMS() > 0.5) {fitRangeMin = xMax - 20; fitRangeMax = xMax + 0.5;}
+     Double_t fitRangeMin = xMax - 0.1*h->GetRMS() ;
+     Double_t fitRangeMax = xMax + 0.2*h->GetRMS() ;
      */
+    
+    cout << endl << "h->GetRMS() = " << h->GetRMS() << endl << endl;
+    
+    //if ( (h->GetRMS() > 10 || h->GetRMS() < 1) && abs(xMax) < 1.2) {fitRangeMin = xMax - 0.5; fitRangeMax = xMax + 0.5;}
+    
     TF1* f = new TF1( "FitFunction", FitGauss, fitRangeMin, fitRangeMax, 3);
     f->SetParNames("Mean", "Sigma", "Amplitude");
-    f->SetParameters(xMax, h->GetRMS(), h->GetMaximum());
+    //f->SetParameters(xMax, h->GetRMS(), h->GetMaximum());
+    f->SetParameters(xMax, h->GetRMS(), 1.);
+    /*
+    f->SetParLimits(3, 0.3, 10);
+    if (electrodeName == "drift") {
+        f->SetParLimits(1, -10, 1);
+        f->SetParLimits(2, 0.0001, 3);
+    }
+    else {
+        f->SetParLimits(1, -200, 20);
+        f->SetParLimits(2, 0.002, 5);
+    }
+     */
+    
+    //if (xMax < -110) f->FixParameter(0, xMax);
     
     h->Fit(f, "0", "0", fitRangeMin, fitRangeMax);
     return f;
@@ -170,19 +215,24 @@ void DrawCurrents(TString path, TString tag, vector<int> hvList, string detector
     
     
     // Get fit curves
-    TF1* fIwith = GetFitCurve(hImonWith);
-    TF1* fIwithout = GetFitCurve(hImonWithout);
+    TF1* fIwith = GetFitCurve(hImonWith, electrodeName);
+    TF1* fIwithout = GetFitCurve(hImonWithout, electrodeName);
     
     // Draw
     /*
-     Double_t xMin = min(hImonWith->GetMean()-4*fIwith->GetParameter(1), hImonWithout->GetMean()-4*f->GetParameter(1));
-     Double_t xMax = max(hImonWith->GetMean()+12*f->GetParameter(1), hImonWithout->GetMean()+12*f->GetParameter(1));
+    Double_t xMin = hImonWith->GetMean() - 1*hImonWith->GetRMS();
+    Double_t xMax = hImonWith->GetMean() + 1*hImonWith->GetRMS();
+    xMin = -135.;
+    xMax = -125.;
      */
-    Double_t xMin = min(fIwith->GetParameter(0)-4*fIwith->GetParameter(1), fIwithout->GetParameter(0)-4*fIwithout->GetParameter(1));
-    Double_t xMax = max(fIwith->GetParameter(0)+8*abs(fIwith->GetParameter(1)), fIwithout->GetParameter(0)+8*abs(fIwithout->GetParameter(1)));
     
+    Double_t prop = 10;
+    if (electrodeName == "drift") prop = 3;
+     Double_t xMin = min(fIwith->GetParameter(0) - prop*abs(fIwith->GetParameter(1)), fIwithout->GetParameter(0) - prop*abs(fIwithout->GetParameter(1)));
+     Double_t xMax = max(fIwith->GetParameter(0) + prop*abs(fIwith->GetParameter(1)), fIwithout->GetParameter(0) + prop*abs(fIwithout->GetParameter(1)));
+
     hImonWith->GetXaxis()->SetRangeUser(xMin, xMax);
-    //hImonWith->GetXaxis()->SetRangeUser(-1, 1);
+    //hImonWith->GetXaxis()->SetRangeUser(-3, 1);
     hImonWith->SetLineColor(kBlue);
     hImonWithout->SetLineColor(kBlack);
     
@@ -195,14 +245,14 @@ void DrawCurrents(TString path, TString tag, vector<int> hvList, string detector
     fIwithout->Draw("same");
     
     // Draw legend
-    TLegend* lgd = new TLegend(0.5, 0.7, 0.9, 0.9);
+    TLegend* lgd = new TLegend(0.5, 0.75, 0.9, 0.9);
     lgd->SetTextSize(0.05);
     lgd->AddEntry(hImonWith, "with source", "l");
     lgd->AddEntry(hImonWithout, "without source", "l");
     lgd->Draw();
 }
 
-void ComputeIbf(TString path, TString tag, vector<int> hvList, string detectorName, string meshName, string driftName, double& ibf, double& ibfError) {
+void ComputeIbf(TString path, TString tag, vector<int> hvList, string detectorName, string electrodeName, string driftName, double& ibf, double& ibfError) {
     
     TString fileNameWith = path+ tag;
     TString fileNameWithout = path+ tag;
@@ -216,41 +266,74 @@ void ComputeIbf(TString path, TString tag, vector<int> hvList, string detectorNa
     if (tag == "log") {
         fileNameWith += "-with.lvm";
         fileNameWithout += "-without.lvm";
-        hImonMeshWith = GetCurrentHist(fileNameWith, meshName, detectorName);
-        hImonMeshWithout = GetCurrentHist(fileNameWithout, meshName, detectorName);
+        hImonMeshWith = GetCurrentHist(fileNameWith, electrodeName, detectorName);
+        hImonMeshWithout = GetCurrentHist(fileNameWithout, electrodeName, detectorName);
         hImonDriftWith = GetCurrentHist(fileNameWith, driftName, detectorName);
         hImonDriftWithout = GetCurrentHist(fileNameWithout, driftName, detectorName);
     }
     else if (tag == "pico") {
         fileNameWith += "-with.csv";
         fileNameWithout += "-without.csv";
-        hImonMeshWith = GetCurrentHistCsv(fileNameWith, meshName, detectorName);
-        hImonMeshWithout = GetCurrentHistCsv(fileNameWithout, meshName, detectorName);
+        hImonMeshWith = GetCurrentHistCsv(fileNameWith, electrodeName, detectorName);
+        hImonMeshWithout = GetCurrentHistCsv(fileNameWithout, electrodeName, detectorName);
         hImonDriftWith = GetCurrentHistCsv(fileNameWith, driftName, detectorName);
         hImonDriftWithout = GetCurrentHistCsv(fileNameWithout, driftName, detectorName);
     }
     else {cout << "Tag " << tag << " does not exist" << endl; return;}
     
     // Fit curves
-    TF1* fIMeshWith = GetFitCurve(hImonMeshWith);
-    TF1* fIMeshWithout = GetFitCurve(hImonMeshWithout);
+    TF1* fIMeshWith = GetFitCurve(hImonMeshWith, electrodeName);
+    TF1* fIMeshWithout = GetFitCurve(hImonMeshWithout, electrodeName);
     
-    TF1* fIDriftWith = GetFitCurve(hImonDriftWith);
-    TF1* fIDriftWithout = GetFitCurve(hImonDriftWithout);
+    TF1* fIDriftWith = GetFitCurve(hImonDriftWith, electrodeName);
+    TF1* fIDriftWithout = GetFitCurve(hImonDriftWithout, electrodeName);
     
     double iMeshWith = fIMeshWith->GetParameter(0);
     double iMeshWithout = fIMeshWithout->GetParameter(0);
-    double iDriftWith = fIDriftWith->GetParameter(0);
-    double iDriftWithout = fIDriftWithout->GetParameter(0);
     
     double iErrorMeshWith = fIMeshWith->GetParError(0);
     double iErrorMeshWithout = fIMeshWithout->GetParError(0);
-    double iErrorDriftWith = fIDriftWith->GetParError(0);
-    double iErrorDriftWithout = fIDriftWithout->GetParError(0);
+    /*
+     double iErrorMeshWith = fIMeshWith->GetParameter(1);
+     double iErrorMeshWithout = fIMeshWithout->GetParameter(1);
+     */
+    
+    double iDriftWith, iDriftWithout, iErrorDriftWith, iErrorDriftWithout;
+    if (true) {
+        iDriftWith = fIDriftWith->GetParameter(0);
+        iDriftWithout = fIDriftWithout->GetParameter(0);
+        
+        iErrorDriftWith = fIDriftWith->GetParError(0);
+        iErrorDriftWithout = fIDriftWithout->GetParError(0);
+        /*
+         iErrorDriftWith = fIDriftWith->GetParameter(1);
+         iErrorDriftWithout = fIDriftWithout->GetParameter(1);
+         */
+    }
+    else {
+        iDriftWith = hImonDriftWith->GetMean();
+        iDriftWithout = hImonDriftWithout->GetMean();
+        iErrorDriftWith = hImonDriftWith->GetMeanError();
+        iErrorDriftWithout = hImonDriftWithout->GetMeanError();
+    }
+    
     
     
     ibf = abs( (iDriftWith-iDriftWithout)/(iMeshWith-iMeshWithout) );
-    ibfError = ibf * sqrt( Square(iErrorMeshWith/iMeshWith) + Square(iErrorMeshWithout/iMeshWithout) + Square(iErrorDriftWith/iDriftWith) + Square(iErrorDriftWithout/iDriftWithout) );
+    
+    cout << endl << endl;
+    cout << "iDriftWith = " << iDriftWith << endl;
+    cout << "iDriftWithout = " << iDriftWithout << endl;
+    cout << "iMeshWith = " << iMeshWith << endl;
+    cout << "iMeshWithout = " << iMeshWithout << endl;
+    cout << endl << endl;
+    
+    ibfError = ibf * sqrt( Square((iErrorMeshWith+iErrorMeshWithout)/(iMeshWith-iMeshWithout)) + Square((iErrorDriftWith+iErrorDriftWithout)/(iDriftWith-iDriftWithout)) );
+    /*
+    double firstTermSquared = (Square(iErrorDriftWith)+Square(iErrorDriftWithout))/Square(iDriftWith-iDriftWithout);
+    double secondTermSquared = (Square(iErrorMeshWith)+Square(iErrorMeshWithout))/Square(iMeshWith-iMeshWithout);
+    ibfError = sqrt( firstTermSquared + secondTermSquared );
+     */
     
     //cout << endl << endl << endl << iMeshWith-iMeshWithout << endl;
     //cout << endl << endl << endl << iDriftWith-iDriftWithout << endl;

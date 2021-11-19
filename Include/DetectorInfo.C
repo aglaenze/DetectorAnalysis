@@ -82,11 +82,11 @@ void LoadParameters(string detectorName, vector<double>& zElectrodes) {
 	}
 	else if (detectorName == "MGEM1") {  // MM + GEM + MM
 		double damp = 0.0128+0.722+0.0060+0.0660;
-		zElectrodes = {damp+1.05, damp, 0.0128+0.722+0.00660, 0.0128+0.722, 0.0128, 0};
+		zElectrodes = {damp+1.05, damp, 0.0128+0.722+0.0060, 0.0128+0.722, 0.0128, 0};
 	}
 	else if (detectorName == "MGEM3") {  // MM + GEM + MM
 		double damp = 0.0128+0.52;
-		zElectrodes = {damp+1.38, damp, 0.0128+0.52-0.0128, 0.0128+0.52-0.0128-0.00660, 0.0128, 0};
+		zElectrodes = {damp+1.38, damp, 0.0128+0.52-0.0128, 0.0128+0.52-0.0128-0.0060, 0.0128, 0};
 	}
 	else if (detectorName == "LittleChinese") {   // MM + GEM
 		zElectrodes = {0.3+0.0320+0.0220, 0.0320+0.0220, 0.0220, 0};
@@ -134,7 +134,7 @@ void DrawDetector(string detectorName, vector<int> hvList) {
 		electrodeLine->SetLineStyle(9);
 		// 0 = drift
 		if (i == 0 || i == electrodeNum-1) electrodeLine->SetLineStyle(1);
-		TLatex* electrodeText = new TLatex(0.05, yCoord+0.03, Form("V_{%s} = %d V", (it->first).c_str(), hvList[electrodeNum-1-i]));
+		TLatex* electrodeText = new TLatex(0.05, yCoord+0.03, Form("V_{%s} = -%d V", (it->first).c_str(), hvList[electrodeNum-1-i]));
 		TText* zElectrode = new TText(0.6, yCoord+0.03, Form("z = %.3f mm", zElectrodes[i]*10));
 		electrodeLine->Draw("same");
 		electrodeText->Draw("same");
@@ -171,7 +171,7 @@ double GetzElectrode(string detectorName, string electrodeName) {
     return -1;
 }
 
-double GetCalibrationAlpha(string detectorName) {
+double GetCalibrationAlpha(string detectorName, string date) {
 	if (detectorName == "ZZBOT") {
 		return 5.45217e-06;
 	}
@@ -190,10 +190,20 @@ double GetCalibrationAlpha(string detectorName) {
         //return 1.51055e-05;
         //return 4.23323e-06;
         //return 1.06289e-05;     // data taken in TL, 17/02/2021
-        return 1.13753e-05;     // data taken in TL, 18/02/2021
+        //return 1.13753e-05/2;     // data taken in TL, 18/02/2021
+        //return 1.0095e-05;      // data taken in TL, 24/02/2021
+        //return 8.16756e-06;      // data taken in TL, 24/02/2021
+        //return 4.23323e-06/1.5;
+        //return 4.23323e-06*1.5;
+        if (date == "2021-04-08" || date == "2021-04-12" || date == "2021-04-13" || date == "2021-10-07" || date == "2021-10-11" || date == "2021-10-14") return 7.9131e-06;
+        return 3.67496e-06;
 	}
 	else if (detectorName == "MGEM3") {  // MM + GEM + MM
-		return 1.25197e-05;
+		//return 1.25197e-05;
+        //return 7.81109e-06;
+        //return 8.93988e-06;     // 15/04/2021 mesh down
+        if (date == "2021-04-15" || date == "2021-04-21"  || date == "2021-08-30"  || date == "2021-08-31" ) return 8.17276e-06;     // 15/04/2021 mesh top
+        return 3.90004e-06;       // 06/10/2021 mesh down
 	}
 	else if (detectorName == "LittleChinese") {   // MM + GEM
 		return 5.65359e-06;
